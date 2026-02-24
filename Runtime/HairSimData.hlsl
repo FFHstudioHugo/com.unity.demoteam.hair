@@ -65,6 +65,21 @@ HAIRSIM_SOLVERDATA<float3> _ParticleVelocity;			// xyz: velocity
 HAIRSIM_SOLVERINIT<float3> _ParticleVelocityPrev;		// xyz: ...
 HAIRSIM_SOLVERDATA<float3> _ParticleCorrection;			// xyz: ftl distance correction
 
+//Code addition by HK Far From Here Studio, 2026  
+// ----- Pin / Chain Pin feature -----
+
+StructuredBuffer<float4> _PinGlobals; // [1] x=pullMul, y=chainMul, z=bindTh, w=releaseTh
+StructuredBuffer<float4> _PinSpheres; // [20] xyz=posWS, w=radius
+StructuredBuffer<float4> _PinParams; // [20] x=pullStrength, y=pullPow, z=chainStrength, w=chainPow
+
+#if F_SOLVE
+RWStructuredBuffer<float4> _ParticleChainBind0;
+RWStructuredBuffer<float4> _ParticleChainBind1;
+#else
+StructuredBuffer<float4> _ParticleChainBind0;
+StructuredBuffer<float4> _ParticleChainBind1;
+#endif // F_SOLVE
+
 StructuredBuffer<float2> _ParticleOptTexCoord;			// xy: optional particle uv
 StructuredBuffer<float> _ParticleOptDiameter;			// x: optional particle diameter
 

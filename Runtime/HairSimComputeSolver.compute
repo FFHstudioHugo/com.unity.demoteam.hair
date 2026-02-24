@@ -86,6 +86,263 @@
 #define ENABLE_POSE_GLOBAL_ROTATION		(LIVE_POSITIONS >= 2 && LIVE_ROTATIONS >= 2 && ENABLE(SOLVERFEATURES_POSE_GLOBAL_ROTATION))
 #define ENABLE_POSE_GLOBAL_POSITION		(ENABLE(SOLVERFEATURES_POSE_GLOBAL_POSITION))
 
+
+//Code addition by HK Far From Here Studio, 2026
+
+#define PIN_MAX 20
+
+void ComputeRadialPull(float3 posWS, out float wOut, out float3 targetOut)
+{
+    float4 g = _PinGlobals[0];
+    float pullMul = g.x;
+	
+	// IMPORTANT: évite de boucler sur les pins quand le pull est désactivé
+    if (pullMul <= 0.0)
+    {
+        wOut = 0.0;
+        targetOut = posWS;
+        return;
+    }
+
+    float sumW = 0.0;
+    float3 sumP = 0.0;
+
+    [loop]
+    for (int p = 0; p < PIN_MAX; p++)
+    {
+        float4 sph = _PinSpheres[p];
+        float r = sph.w;
+        if (r <= 0.0)
+            continue;
+
+        float3 d = posWS - sph.xyz;
+        float d2 = dot(d, d);
+        float r2 = r * r;
+        if (d2 >= r2)
+            continue;
+
+        float t = 1.0 - sqrt(d2) / r;
+        t = saturate(t);
+
+        float4 prm = _PinParams[p];
+        float strength = saturate(prm.x) * pullMul;
+        float fallPow = max(1e-3, prm.y);
+
+        float w = strength * pow(t, fallPow);
+        sumW += w;
+        sumP += w * sph.xyz;
+    }
+
+    if (sumW > 0.0)
+    {
+        targetOut = sumP / sumW;
+        wOut = saturate(sumW);
+    }
+    else
+    {
+        targetOut = posWS;
+        wOut = 0.0;
+    }
+}
+
+static const uint PIN_ACTIVE_BIT = 0x80000000u;
+
+float3 SafeNormalizeInternal(float3 v)
+{
+    float l = length(v);
+    return (l > 1e-6) ? (v / l) : float3(0, 0, 1);
+}
+
+
+void BuildFrame(float3 tangent, out float3 n, out float3 b)
+{
+    float3 t = SafeNormalizeInternal(tangent);
+    float3 up = float3(0, 1, 0);
+    n = cross(up, t);
+    if (dot(n, n) < 1e-6)
+        n = cross(float3(0, 0, 1), t);
+    n = SafeNormalizeInternal(n);
+    b = cross(t, n);
+}
+
+float SegmentCapsuleWeight(
+    float3 posWS,
+    float3 aWS, float ra,
+    float3 bWS, float rb,
+    float strength, float fallPow,
+    out float tSeg, out float3 cWS, out float3 tanWS, out float rOut)
+{
+    float3 ab = bWS - aWS;
+    float ab2 = max(1e-6, dot(ab, ab));
+    tSeg = saturate(dot(posWS - aWS, ab) / ab2);
+    cWS = aWS + tSeg * ab;
+    tanWS = ab;
+
+    rOut = lerp(ra, rb, tSeg);
+    if (rOut <= 0.0)
+        return 0.0;
+
+    float3 d = posWS - cWS;
+    float dist = length(d);
+    if (dist >= rOut)
+        return 0.0;
+
+    float u = saturate(1.0 - dist / rOut);
+    return saturate(strength) * pow(u, max(1e-3, fallPow));
+}
+
+#if F_SOLVE
+
+void ApplyChainedPin(uint particleIndex, inout float3 posWS)
+{
+    float4 g = _PinGlobals[0];
+    float chainMul = g.y;
+    float bindTh = g.z;
+    float releaseTh = g.w;
+
+    if (chainMul <= 0.0)
+        return;
+
+    // Read current bind state
+    float4 bind0 = _ParticleChainBind0[particleIndex];
+    float4 bind1 = _ParticleChainBind1[particleIndex];
+
+    uint packed = asuint(bind0.w);
+    bool active = (packed & PIN_ACTIVE_BIT) != 0;
+    uint segIdx = (packed & ~PIN_ACTIVE_BIT);
+
+    // If not active: find best segment to bind
+    if (!active)
+    {
+        float bestW = 0.0;
+        uint bestSeg = 0;
+        float bestT = 0.0;
+        float3 bestC = posWS;
+        float3 bestTan = float3(0, 1, 0);
+
+        [loop]
+        for (uint s = 0; s < (PIN_MAX - 1); s++)
+        {
+            float4 aS = _PinSpheres[s];
+            float4 bS = _PinSpheres[s + 1];
+            if (aS.w <= 0.0 || bS.w <= 0.0)
+                continue;
+
+            float4 aP = _PinParams[s];
+            float4 bP = _PinParams[s + 1];
+
+            float strength = chainMul * 0.5 * (aP.z + bP.z);
+            float fallPow = 0.5 * (aP.w + bP.w);
+
+            float tSeg;
+            float3 cWS;
+            float3 tanWS;
+            float rSeg;
+            float w = SegmentCapsuleWeight(posWS, aS.xyz, aS.w, bS.xyz, bS.w, strength, fallPow, tSeg, cWS, tanWS, rSeg);
+
+            if (w > bestW)
+            {
+                bestW = w;
+                bestSeg = s;
+                bestT = tSeg;
+                bestC = cWS;
+                bestTan = tanWS;
+            }
+        }
+
+        if (bestW <= bindTh)
+            return;
+
+        // Bind: store local offset in the chain frame at (bestSeg, bestT)
+        float3 n, b;
+        BuildFrame(bestTan, n, b);
+
+        float3 tdir = SafeNormalizeInternal(bestTan);
+        float3 d = posWS - bestC;
+
+        float3 local;
+        local.x = dot(d, n);
+        local.y = dot(d, b);
+        local.z = dot(d, tdir);
+
+        bind0 = float4(local, asfloat(bestSeg | PIN_ACTIVE_BIT));
+        bind1 = float4(bestT, 0, 0, 0);
+
+        _ParticleChainBind0[particleIndex] = bind0;
+        _ParticleChainBind1[particleIndex] = bind1;
+        return;
+    }
+
+    // Active: use stored segment + stored t (prevents sliding/fighting)
+    if (segIdx >= (PIN_MAX - 1))
+    {
+        _ParticleChainBind0[particleIndex].w = asfloat(0u);
+        return;
+    }
+
+    float4 aS2 = _PinSpheres[segIdx];
+    float4 bS2 = _PinSpheres[segIdx + 1];
+    if (aS2.w <= 0.0 || bS2.w <= 0.0)
+    {
+        _ParticleChainBind0[particleIndex].w = asfloat(0u);
+        return;
+    }
+
+    float tStored = saturate(_ParticleChainBind1[particleIndex].x);
+    float3 cWS2 = lerp(aS2.xyz, bS2.xyz, tStored);
+    float r2 = lerp(aS2.w, bS2.w, tStored);
+    if (r2 <= 0.0)
+    {
+        _ParticleChainBind0[particleIndex].w = asfloat(0u);
+        return;
+    }
+
+    float4 aP2 = _PinParams[segIdx];
+    float4 bP2 = _PinParams[segIdx + 1];
+    float strength2 = chainMul * 0.5 * (aP2.z + bP2.z);
+    float fallPow2 = 0.5 * (aP2.w + bP2.w);
+
+    float dist2 = length(posWS - cWS2);
+    float u2 = saturate(1.0 - dist2 / r2);
+    float w2 = saturate(strength2) * pow(u2, max(1e-3, fallPow2));
+
+    if (w2 <= releaseTh)
+    {
+        _ParticleChainBind0[particleIndex].w = asfloat(0u);
+        return;
+    }
+
+    float3 tan2 = (bS2.xyz - aS2.xyz);
+    float3 n2, b2;
+    BuildFrame(tan2, n2, b2);
+
+    float3 tdir2 = SafeNormalizeInternal(tan2);
+    float3 local2 = _ParticleChainBind0[particleIndex].xyz;
+
+    float3 targetWS =
+        cWS2 +
+        n2 * local2.x +
+        b2 * local2.y +
+        tdir2 * local2.z;
+
+    // Reduce jitter: clamp correction per step (optional but recommended)
+    float3 delta = targetWS - posWS;
+    float maxMove = 0.5 * r2; // tune (0.25..1.0)*r
+    float lenD = length(delta);
+    if (lenD > maxMove)
+        delta *= (maxMove / max(1e-6, lenD));
+
+    posWS += delta * saturate(w2);
+}
+
+#else
+void ApplyChainedPin(uint particleIndex, inout float3 posWS)
+{
+    // no-op pour kernels non solve (LOD, roots, etc.)
+}
+#endif // F_SOLVE
+
+
 #if SECOND_ORDER_UPDATE
 #define SECOND_ORDER_POSITION 1
 #define SECOND_ORDER_VELOCITY 0
@@ -1468,6 +1725,27 @@ void PartialStrand_SolveNext(
 		}
 	}
 
+	//Code addition by HK Far From Here Studio, 2026
+	{
+		// 1) optional radial pull (attractor)
+
+		float wPull;
+		float3 pullTarget;
+
+		float pullMul = _PinGlobals[0].x;
+		if (pullMul > 0.0)
+		{
+			ComputeRadialPull(p.minus[0], wPull, pullTarget);
+			if (wPull > 0.0)
+				p.minus[0] = lerp(p.minus[0], pullTarget, wPull);
+		}
+
+		// 2) chained constraint (braid/attachment style)
+
+		const uint particleIndex = GetParticleIndex(strandIndex, k);
+		ApplyChainedPin(particleIndex, p.minus[0]);
+	}
+
 	// LIVE_POSITIONS == 3
 	//
 	//                           (q1)          (q0)
@@ -1493,6 +1771,7 @@ void PartialStrand_SolveNext(
 	//                                                 write
 
 	GroupMemoryBarrierWithGroupSync();
+	
 
 	if (ENABLE_DISTANCE_FTL)
 	{
@@ -1506,6 +1785,10 @@ void PartialStrand_SolveNext(
 	// if ((LIVE_POSITIONS == 2) && (w_minus[1] != 0.0)) _ParticlePosition[i - strandParticleStride * 1].xyz = p.minus[1];
 	// if ((LIVE_POSITIONS == 1) && (w_minus[0] != 0.0)) _ParticlePosition[i - strandParticleStride * 0].xyz = p.minus[0];
 	if (w_minus[LIVE_POSITIONS - 1] != 0.0) _ParticlePosition[GetParticleIndex(strandIndex, k - (LIVE_POSITIONS - 1))].xyz = p.minus[LIVE_POSITIONS - 1];
+
+	
+
+
 }
 
 void PartialStrand_SolveTail(inout PartialStrandPos p, inout PartialStrandRot q, const uint strandIndex, const float stiffness)
@@ -1930,8 +2213,31 @@ void KSolveConstraints_Jacobi(
 			gs_q[j] = normalize(gs_q[j] + corr_q);
 		}
 	}
+	
+	
+	//Code addition by HK Far From Here Studio, 2026
+	{
+
+       // Code addition ...
+        float pullMul = _PinGlobals[0].x;
+		
+        if (pullMul > 0.0)
+			{
+				float wPull;
+				float3 pullTarget;
+			
+				ComputeRadialPull(gs_x[j].xyz, wPull, pullTarget);
+
+				if (wPull > 0.0)
+					gs_x[j].xyz = lerp(gs_x[j].xyz, pullTarget, wPull);
+			}
+
+        ApplyChainedPin(i, gs_x[j].xyz);
+    }
 
 	GroupMemoryBarrierWithGroupSync();
+
+
 
 	// store positions
 	{

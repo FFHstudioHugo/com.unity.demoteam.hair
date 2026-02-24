@@ -272,7 +272,31 @@ namespace Unity.DemoTeam.Hair
 				changed |= CreateBuffer(ref solverBuffers._ParticleVelocity, "ParticleVelocity_0", particleCount, particleStrideVector3);
 				changed |= CreateBuffer(ref solverBuffers._ParticleVelocityPrev, "ParticleVelocity_1", (Conf.SECOND_ORDER_UPDATE != 0) ? particleCount : 1, particleStrideVector3);
 
-				changed |= CreateBuffer(ref solverBuffers._LODGuideCount, "LODGuideCount", Mathf.Max(1, lodCount), particleStrideIndex);
+                //Code addition by HK Far From Here Studio, 2026
+                const int PIN_MAX = 20;
+
+                // small fixed pin buffers
+                changed |= CreateBuffer(ref solverBuffers._PinGlobals, "PinGlobals", 1, particleStrideVector4);
+                changed |= CreateBuffer(ref solverBuffers._PinSpheres, "PinSpheres", PIN_MAX, particleStrideVector4);
+                changed |= CreateBuffer(ref solverBuffers._PinParams, "PinParams", PIN_MAX, particleStrideVector4);
+
+                // per-particle chain binding state (RW in solve)
+                changed |= CreateBuffer(ref solverBuffers._ParticleChainBind0, "ParticleChainBind0", particleCount, particleStrideVector4);
+                changed |= CreateBuffer(ref solverBuffers._ParticleChainBind1, "ParticleChainBind1", particleCount, particleStrideVector4);
+
+                // initialize to zero once when buffers are (re)created
+                if (changed)
+                {
+                    solverBuffers._PinGlobals.SetData(new Vector4[1]);
+                    solverBuffers._PinSpheres.SetData(new Vector4[PIN_MAX]);
+                    solverBuffers._PinParams.SetData(new Vector4[PIN_MAX]);
+
+                    var zeros = new Vector4[particleCount];
+                    solverBuffers._ParticleChainBind0.SetData(zeros);
+                    solverBuffers._ParticleChainBind1.SetData(zeros);
+                }
+
+                changed |= CreateBuffer(ref solverBuffers._LODGuideCount, "LODGuideCount", Mathf.Max(1, lodCount), particleStrideIndex);
 				changed |= CreateBuffer(ref solverBuffers._LODGuideIndex, "LODGuideIndex", Mathf.Max(1, lodCount) * strandCount, particleStrideIndex);
 				changed |= CreateBuffer(ref solverBuffers._LODGuideCarry, "LODGuideCarry", Mathf.Max(1, lodCount) * strandCount, particleStrideScalar);
 				changed |= CreateBuffer(ref solverBuffers._LODGuideReach, "LODGuideReach", Mathf.Max(1, lodCount) * strandCount, particleStrideScalar);
@@ -283,8 +307,9 @@ namespace Unity.DemoTeam.Hair
 				CreateReadbackBuffer(ref solverData.buffersReadback._SolverLODDispatch, solverBuffers._SolverLODDispatch);
 				CreateReadbackBuffer(ref solverData.buffersReadback._SolverLODTopology, solverBuffers._SolverLODTopology);
 #endif
+                
 
-				return changed;
+                return changed;
 			}
 		}
 
@@ -413,7 +438,14 @@ namespace Unity.DemoTeam.Hair
 			ReleaseBuffer(ref solverBuffers._ParticleVelocityPrev);
 			ReleaseBuffer(ref solverBuffers._ParticleCorrection);
 
-			ReleaseBuffer(ref solverBuffers._ParticleOptTexCoord);
+            //Code addition by HK Far From Here Studio, 2026
+            ReleaseBuffer(ref solverBuffers._PinGlobals);
+            ReleaseBuffer(ref solverBuffers._PinSpheres);
+            ReleaseBuffer(ref solverBuffers._PinParams);
+            ReleaseBuffer(ref solverBuffers._ParticleChainBind0);
+            ReleaseBuffer(ref solverBuffers._ParticleChainBind1);
+
+            ReleaseBuffer(ref solverBuffers._ParticleOptTexCoord);
 			ReleaseBuffer(ref solverBuffers._ParticleOptDiameter);
 
 			ReleaseBuffer(ref solverBuffers._LODGuideCount);
@@ -547,7 +579,15 @@ namespace Unity.DemoTeam.Hair
 			target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleVelocityPrev, solverBuffers._ParticleVelocityPrev);
 			target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleCorrection, solverBuffers._ParticleCorrection);
 
-			target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleOptTexCoord, solverBuffers._ParticleOptTexCoord);
+            //Code addition by HK Far From Here Studio, 2026
+            target.BindComputeBuffer(SolverData.s_bufferIDs._PinGlobals, solverBuffers._PinGlobals);
+            target.BindComputeBuffer(SolverData.s_bufferIDs._PinSpheres, solverBuffers._PinSpheres);
+            target.BindComputeBuffer(SolverData.s_bufferIDs._PinParams, solverBuffers._PinParams);
+
+            target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleChainBind0, solverBuffers._ParticleChainBind0);
+            target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleChainBind1, solverBuffers._ParticleChainBind1);
+
+            target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleOptTexCoord, solverBuffers._ParticleOptTexCoord);
 			target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleOptDiameter, solverBuffers._ParticleOptDiameter);
 
 			target.BindComputeBuffer(SolverData.s_bufferIDs._LODGuideCount, solverBuffers._LODGuideCount);
