@@ -60,6 +60,7 @@ namespace Unity.DemoTeam.Hair
 
                 public T _PinSpheres;					// float4: xyz = pin position (WS), w = radius
                 public T _PinParams;					// float4: x = strength [0..1], y = falloffPower, z,w unused
+                public T _PinRotations;                 // float4[20] quaternion (x,y,z,w)
 
                 public T _ParticleOptTexCoord;          // xy: optional particle uv
                 public T _ParticleOptDiameter;          // x: optional particle diameter

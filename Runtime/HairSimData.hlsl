@@ -73,11 +73,15 @@ StructuredBuffer<float4> _PinSpheres; // [20] xyz=posWS, w=radius
 StructuredBuffer<float4> _PinParams; // [20] x=pullStrength, y=pullPow, z=chainStrength, w=chainPow
 
 #if F_SOLVE
+
 RWStructuredBuffer<float4> _ParticleChainBind0;
 RWStructuredBuffer<float4> _ParticleChainBind1;
+StructuredBuffer<float4> _PinRotations; // [20] quaternion (x,y,z,w)
+
 #else
 StructuredBuffer<float4> _ParticleChainBind0;
 StructuredBuffer<float4> _ParticleChainBind1;
+StructuredBuffer<float4> _PinRotations; // [20] quaternion (x,y,z,w)
 #endif // F_SOLVE
 
 StructuredBuffer<float2> _ParticleOptTexCoord;			// xy: optional particle uv

@@ -116,7 +116,10 @@ namespace Unity.DemoTeam.Hair
 			public static int KStagingSubdivision;
 			public static int KStagingHistory;
 			public static int KStagingHistoryAdd;
-		}
+            public static int KChainBind;
+        }
+
+
 
 		static class VolumeKernels
 		{
@@ -284,9 +287,11 @@ namespace Unity.DemoTeam.Hair
                 changed |= CreateBuffer(ref solverBuffers._ParticleChainBind0, "ParticleChainBind0", particleCount, particleStrideVector4);
                 changed |= CreateBuffer(ref solverBuffers._ParticleChainBind1, "ParticleChainBind1", particleCount, particleStrideVector4);
 
+                changed |= CreateBuffer(ref solverBuffers._PinRotations, "PinRotations", PIN_MAX, particleStrideVector4);
                 // initialize to zero once when buffers are (re)created
                 if (changed)
                 {
+                    solverBuffers._PinRotations.SetData(new Vector4[PIN_MAX]);
                     solverBuffers._PinGlobals.SetData(new Vector4[1]);
                     solverBuffers._PinSpheres.SetData(new Vector4[PIN_MAX]);
                     solverBuffers._PinParams.SetData(new Vector4[PIN_MAX]);
@@ -444,6 +449,7 @@ namespace Unity.DemoTeam.Hair
             ReleaseBuffer(ref solverBuffers._PinParams);
             ReleaseBuffer(ref solverBuffers._ParticleChainBind0);
             ReleaseBuffer(ref solverBuffers._ParticleChainBind1);
+            ReleaseBuffer(ref solverBuffers._PinRotations);
 
             ReleaseBuffer(ref solverBuffers._ParticleOptTexCoord);
 			ReleaseBuffer(ref solverBuffers._ParticleOptDiameter);
@@ -586,6 +592,8 @@ namespace Unity.DemoTeam.Hair
 
             target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleChainBind0, solverBuffers._ParticleChainBind0);
             target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleChainBind1, solverBuffers._ParticleChainBind1);
+
+            target.BindComputeBuffer(SolverData.s_bufferIDs._PinRotations, solverBuffers._PinRotations);
 
             target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleOptTexCoord, solverBuffers._ParticleOptTexCoord);
 			target.BindComputeBuffer(SolverData.s_bufferIDs._ParticleOptDiameter, solverBuffers._ParticleOptDiameter);
@@ -966,8 +974,45 @@ namespace Unity.DemoTeam.Hair
 			BindSolverData(cmd, s_solverCS, SolverKernels.KInterpolateAdd, WithCurrentRoots(solverData));
 			cmd.DispatchCompute(s_solverCS, SolverKernels.KInterpolateAdd, solverData.buffers._SolverLODDispatch, GetSolverLODDispatchOffset(SolverLODDispatch.InterpolateAdd));
 		}
+        public static void PushChainBind(CommandBuffer cmd, in SolverData solverData)
+        {
+            int kernel = s_solverCS.FindKernel("KChainBind");
+            BindSolverData(cmd, s_solverCS, kernel, solverData);
 
-		public static void PushSolverStepBegin(CommandBuffer cmd, ref SolverData solverData, in SettingsPhysics settingsPhysics, float deltaTime)
+            // ---- SET REQUIRED CONSTANTS FOR KChainBind (otherwise they can be 0) ----
+            int idStrandCount = Shader.PropertyToID("_StrandCount");
+            int idStrandParticleCount = Shader.PropertyToID("_StrandParticleCount");
+            int idStrandParticleOffset = Shader.PropertyToID("_StrandParticleOffset");
+            int idStrandParticleStride = Shader.PropertyToID("_StrandParticleStride");
+
+            cmd.SetComputeIntParam(s_solverCS, idStrandCount, (int)solverData.constants._StrandCount);
+            cmd.SetComputeIntParam(s_solverCS, idStrandParticleCount, (int)solverData.constants._StrandParticleCount);
+            cmd.SetComputeIntParam(s_solverCS, idStrandParticleOffset, (int)solverData.constants._StrandParticleOffset);
+            cmd.SetComputeIntParam(s_solverCS, idStrandParticleStride, (int)solverData.constants._StrandParticleStride);
+
+
+            // --- IMPORTANT: bind explicitement les deux UAV de chain ---
+            int id0 = Shader.PropertyToID("_ParticleChainBind0");
+            int id1 = Shader.PropertyToID("_ParticleChainBind1");
+
+            // Selon Unity version, l’overload GraphicsBuffer existe.
+            // Si ça ne compile pas, voir option B plus bas.
+            cmd.SetComputeBufferParam(s_solverCS, kernel, id0, solverData.buffers._ParticleChainBind0);
+            cmd.SetComputeBufferParam(s_solverCS, kernel, id1, solverData.buffers._ParticleChainBind1);
+
+            int strandCount = (int)solverData.constants._StrandCount;
+            int strandParticleCount = (int)solverData.constants._StrandParticleCount;
+            int particleCount = strandCount * strandParticleCount;
+
+            int numX = (particleCount + THREAD_GROUP_SIZE - 1) / THREAD_GROUP_SIZE;
+
+#if UNITY_EDITOR
+            Debug.Log($"[HairChain] KChainBind kernel={kernel} dispatchX={numX} particleCount={particleCount}");
+#endif
+
+            cmd.DispatchCompute(s_solverCS, kernel, numX, 1, 1);
+        }
+        public static void PushSolverStepBegin(CommandBuffer cmd, ref SolverData solverData, in SettingsPhysics settingsPhysics, float deltaTime)
 		{
 			ref var solverConstants = ref solverData.constants;
 			ref var solverKeywords = ref solverData.keywords;
