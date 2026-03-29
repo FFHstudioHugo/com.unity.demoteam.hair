@@ -5,101 +5,11 @@
 #ifndef HAIRSIMDATA_CS_HLSL
 #define HAIRSIMDATA_CS_HLSL
 //
-// Unity.DemoTeam.Hair.HairSim+VolumeLODDispatch:  static fields
-//
-#define VOLUMELODDISPATCH_RESOLVE (0)
-#define VOLUMELODDISPATCH_RASTER_POINTS (1)
-#define VOLUMELODDISPATCH_RASTER_VECTORS (2)
-#define VOLUMELODDISPATCH___COUNT (3)
-
-//
-// Unity.DemoTeam.Hair.HairSim+StagingVertexFormat:  static fields
-//
-#define STAGINGVERTEXFORMAT_COMPRESSED (0)
-#define STAGINGVERTEXFORMAT_UNCOMPRESSED (1)
-
-//
-// Unity.DemoTeam.Hair.HairSim+VolumeLODStage:  static fields
-//
-#define VOLUMELODSTAGE_RESOLVE (0)
-#define VOLUMELODSTAGE___COUNT (1)
-
-//
-// Unity.DemoTeam.Hair.HairSim+SolverLODTopology:  static fields
-//
-#define SOLVERLODTOPOLOGY_INDEXED_LINES (0)
-#define SOLVERLODTOPOLOGY_INDEXED_STRIPS (1)
-#define SOLVERLODTOPOLOGY_INDEXED_TUBES (2)
-#define SOLVERLODTOPOLOGY_INDEXED_INSTANCED_LINES (3)
-#define SOLVERLODTOPOLOGY_INDEXED_INSTANCED_STRIPS (4)
-#define SOLVERLODTOPOLOGY_INDEXED_INSTANCED_TUBES (5)
-#define SOLVERLODTOPOLOGY_XR_INDEXED_LINES (6)
-#define SOLVERLODTOPOLOGY_XR_INDEXED_STRIPS (7)
-#define SOLVERLODTOPOLOGY_XR_INDEXED_TUBES (8)
-#define SOLVERLODTOPOLOGY_XR_INDEXED_INSTANCED_LINES (9)
-#define SOLVERLODTOPOLOGY_XR_INDEXED_INSTANCED_STRIPS (10)
-#define SOLVERLODTOPOLOGY_XR_INDEXED_INSTANCED_TUBES (11)
-#define SOLVERLODTOPOLOGY___COUNT (12)
-
-//
 // Unity.DemoTeam.Hair.HairSim+RenderFeatures:  static fields
 //
 #define RENDERFEATURES_INSTANCING (1)
 #define RENDERFEATURES_PER_VERTEX_TEX_COORD (2)
 #define RENDERFEATURES_PER_VERTEX_DIAMETER (4)
-
-//
-// Unity.DemoTeam.Hair.HairSim+SolverLODSelection:  static fields
-//
-#define SOLVERLODSELECTION_AUTOMATIC_PER_GROUP (0)
-#define SOLVERLODSELECTION_AUTOMATIC_PER_VOLUME (1)
-#define SOLVERLODSELECTION_MANUAL (2)
-
-//
-// Unity.DemoTeam.Hair.HairSim+SolverLODRange:  static fields
-//
-#define SOLVERLODRANGE_SOLVE (0)
-#define SOLVERLODRANGE_INTERPOLATE (1)
-#define SOLVERLODRANGE_INTERPOLATE_ADD (2)
-#define SOLVERLODRANGE_INTERPOLATE_PROMOTE (3)
-#define SOLVERLODRANGE_RENDER (4)
-#define SOLVERLODRANGE_RENDER_ADD (5)
-#define SOLVERLODRANGE___COUNT (6)
-
-//
-// Unity.DemoTeam.Hair.HairSim+SolverLODStage:  static fields
-//
-#define SOLVERLODSTAGE_PHYSICS (0)
-#define SOLVERLODSTAGE_PHYSICS_PREV (1)
-#define SOLVERLODSTAGE_RENDERING (2)
-#define SOLVERLODSTAGE___COUNT (3)
-
-//
-// Unity.DemoTeam.Hair.HairSim+SolverLODDispatch:  static fields
-//
-#define SOLVERLODDISPATCH_SOLVE (0)
-#define SOLVERLODDISPATCH_SOLVE_GROUP_PARTICLES (1)
-#define SOLVERLODDISPATCH_INTERPOLATE (2)
-#define SOLVERLODDISPATCH_INTERPOLATE_ADD (3)
-#define SOLVERLODDISPATCH_INTERPOLATE_PROMOTE (4)
-#define SOLVERLODDISPATCH_STAGING (5)
-#define SOLVERLODDISPATCH_STAGING_ADD (6)
-#define SOLVERLODDISPATCH_ROOTS (7)
-#define SOLVERLODDISPATCH_TRANSFER (8)
-#define SOLVERLODDISPATCH_TRANSFER_ALL (9)
-#define SOLVERLODDISPATCH_RASTER_POINTS (10)
-#define SOLVERLODDISPATCH_RASTER_POINTS_ALL (11)
-#define SOLVERLODDISPATCH_RASTER_QUADS (12)
-#define SOLVERLODDISPATCH_RASTER_QUADS_ALL (13)
-#define SOLVERLODDISPATCH___COUNT (14)
-
-//
-// Unity.DemoTeam.Hair.HairSim+VolumeFeatures:  static fields
-//
-#define VOLUMEFEATURES_SCATTERING (1)
-#define VOLUMEFEATURES_SCATTERING_FASTPATH (2)
-#define VOLUMEFEATURES_WIND (4)
-#define VOLUMEFEATURES_WIND_FASTPATH (8)
 
 //
 // Unity.DemoTeam.Hair.HairSim+RenderLODSelection:  static fields
@@ -126,49 +36,95 @@
 #define SOLVERFEATURES_POSE_GLOBAL_POSITION (1024)
 #define SOLVERFEATURES_POSE_GLOBAL_ROTATION (2048)
 
-// Generated from Unity.DemoTeam.Hair.HairSim+VolumeCBufferEnvironment
-// PackingRules = Exact
-CBUFFER_START(VolumeCBufferEnvironment)
-    float4 _WorldGravity;
-    uint _LODFrustumCount;
-    uint _BoundaryDelimDiscrete;
-    uint _BoundaryDelimCapsule;
-    uint _BoundaryDelimSphere;
-    uint _BoundaryDelimTorus;
-    uint _BoundaryDelimCube;
-    float _BoundaryWorldEpsilon;
-    float _BoundaryWorldMargin;
-    float _WindEmitterClock;
-    uint _WindEmitterCount;
-    float _ecbpad1;
-    float _ecbpad2;
-CBUFFER_END
+//
+// Unity.DemoTeam.Hair.HairSim+SolverLODDispatch:  static fields
+//
+#define SOLVERLODDISPATCH_SOLVE (0)
+#define SOLVERLODDISPATCH_SOLVE_GROUP_PARTICLES (1)
+#define SOLVERLODDISPATCH_INTERPOLATE (2)
+#define SOLVERLODDISPATCH_INTERPOLATE_ADD (3)
+#define SOLVERLODDISPATCH_INTERPOLATE_PROMOTE (4)
+#define SOLVERLODDISPATCH_STAGING (5)
+#define SOLVERLODDISPATCH_STAGING_ADD (6)
+#define SOLVERLODDISPATCH_ROOTS (7)
+#define SOLVERLODDISPATCH_TRANSFER (8)
+#define SOLVERLODDISPATCH_TRANSFER_ALL (9)
+#define SOLVERLODDISPATCH_RASTER_POINTS (10)
+#define SOLVERLODDISPATCH_RASTER_POINTS_ALL (11)
+#define SOLVERLODDISPATCH_RASTER_QUADS (12)
+#define SOLVERLODDISPATCH_RASTER_QUADS_ALL (13)
+#define SOLVERLODDISPATCH___COUNT (14)
 
-// Generated from Unity.DemoTeam.Hair.HairSim+VolumeCBuffer
-// PackingRules = Exact
-CBUFFER_START(VolumeCBuffer)
-    uint _GridResolution;
-    float _AllGroupsMaxParticleVolume;
-    float _AllGroupsMaxParticleInterval;
-    float _AllGroupsMaxParticleDiameter;
-    float _AllGroupsAvgParticleDiameter;
-    float _AllGroupsAvgParticleMargin;
-    uint _CombinedBoundsIndex;
-    uint _VolumeFeatures;
-    float _VolumeDT;
-    float _TargetDensityScale;
-    float _TargetDensityInfluence;
-    float _ScatteringProbeUnitWidth;
-    uint _ScatteringProbeSubsteps;
-    uint _ScatteringProbeSamplesTheta;
-    uint _ScatteringProbeSamplesPhi;
-    float _ScatteringProbeOccluderDensity;
-    float _ScatteringProbeOccluderMargin;
-    uint _WindPropagationSubsteps;
-    float _WindPropagationExtinction;
-    float _WindPropagationOccluderDensity;
-    float _WindPropagationOccluderMargin;
-CBUFFER_END
+//
+// Unity.DemoTeam.Hair.HairSim+SolverLODRange:  static fields
+//
+#define SOLVERLODRANGE_SOLVE (0)
+#define SOLVERLODRANGE_INTERPOLATE (1)
+#define SOLVERLODRANGE_INTERPOLATE_ADD (2)
+#define SOLVERLODRANGE_INTERPOLATE_PROMOTE (3)
+#define SOLVERLODRANGE_RENDER (4)
+#define SOLVERLODRANGE_RENDER_ADD (5)
+#define SOLVERLODRANGE___COUNT (6)
+
+//
+// Unity.DemoTeam.Hair.HairSim+SolverLODSelection:  static fields
+//
+#define SOLVERLODSELECTION_AUTOMATIC_PER_GROUP (0)
+#define SOLVERLODSELECTION_AUTOMATIC_PER_VOLUME (1)
+#define SOLVERLODSELECTION_MANUAL (2)
+
+//
+// Unity.DemoTeam.Hair.HairSim+SolverLODStage:  static fields
+//
+#define SOLVERLODSTAGE_PHYSICS (0)
+#define SOLVERLODSTAGE_PHYSICS_PREV (1)
+#define SOLVERLODSTAGE_RENDERING (2)
+#define SOLVERLODSTAGE___COUNT (3)
+
+//
+// Unity.DemoTeam.Hair.HairSim+SolverLODTopology:  static fields
+//
+#define SOLVERLODTOPOLOGY_INDEXED_LINES (0)
+#define SOLVERLODTOPOLOGY_INDEXED_STRIPS (1)
+#define SOLVERLODTOPOLOGY_INDEXED_TUBES (2)
+#define SOLVERLODTOPOLOGY_INDEXED_INSTANCED_LINES (3)
+#define SOLVERLODTOPOLOGY_INDEXED_INSTANCED_STRIPS (4)
+#define SOLVERLODTOPOLOGY_INDEXED_INSTANCED_TUBES (5)
+#define SOLVERLODTOPOLOGY_XR_INDEXED_LINES (6)
+#define SOLVERLODTOPOLOGY_XR_INDEXED_STRIPS (7)
+#define SOLVERLODTOPOLOGY_XR_INDEXED_TUBES (8)
+#define SOLVERLODTOPOLOGY_XR_INDEXED_INSTANCED_LINES (9)
+#define SOLVERLODTOPOLOGY_XR_INDEXED_INSTANCED_STRIPS (10)
+#define SOLVERLODTOPOLOGY_XR_INDEXED_INSTANCED_TUBES (11)
+#define SOLVERLODTOPOLOGY___COUNT (12)
+
+//
+// Unity.DemoTeam.Hair.HairSim+StagingVertexFormat:  static fields
+//
+#define STAGINGVERTEXFORMAT_COMPRESSED (0)
+#define STAGINGVERTEXFORMAT_UNCOMPRESSED (1)
+
+//
+// Unity.DemoTeam.Hair.HairSim+VolumeFeatures:  static fields
+//
+#define VOLUMEFEATURES_SCATTERING (1)
+#define VOLUMEFEATURES_SCATTERING_FASTPATH (2)
+#define VOLUMEFEATURES_WIND (4)
+#define VOLUMEFEATURES_WIND_FASTPATH (8)
+
+//
+// Unity.DemoTeam.Hair.HairSim+VolumeLODDispatch:  static fields
+//
+#define VOLUMELODDISPATCH_RESOLVE (0)
+#define VOLUMELODDISPATCH_RASTER_POINTS (1)
+#define VOLUMELODDISPATCH_RASTER_VECTORS (2)
+#define VOLUMELODDISPATCH___COUNT (3)
+
+//
+// Unity.DemoTeam.Hair.HairSim+VolumeLODStage:  static fields
+//
+#define VOLUMELODSTAGE_RESOLVE (0)
+#define VOLUMELODSTAGE___COUNT (1)
 
 // Generated from Unity.DemoTeam.Hair.HairSim+SolverCBuffer
 // PackingRules = Exact
@@ -246,6 +202,50 @@ CBUFFER_START(SolverCBufferRoots)
     uint _RootMeshNormalStride;
     float _rcbpad1;
     float _rcbpad2;
+CBUFFER_END
+
+// Generated from Unity.DemoTeam.Hair.HairSim+VolumeCBuffer
+// PackingRules = Exact
+CBUFFER_START(VolumeCBuffer)
+    uint _GridResolution;
+    float _AllGroupsMaxParticleVolume;
+    float _AllGroupsMaxParticleInterval;
+    float _AllGroupsMaxParticleDiameter;
+    float _AllGroupsAvgParticleDiameter;
+    float _AllGroupsAvgParticleMargin;
+    uint _CombinedBoundsIndex;
+    uint _VolumeFeatures;
+    float _VolumeDT;
+    float _TargetDensityScale;
+    float _TargetDensityInfluence;
+    float _ScatteringProbeUnitWidth;
+    uint _ScatteringProbeSubsteps;
+    uint _ScatteringProbeSamplesTheta;
+    uint _ScatteringProbeSamplesPhi;
+    float _ScatteringProbeOccluderDensity;
+    float _ScatteringProbeOccluderMargin;
+    uint _WindPropagationSubsteps;
+    float _WindPropagationExtinction;
+    float _WindPropagationOccluderDensity;
+    float _WindPropagationOccluderMargin;
+CBUFFER_END
+
+// Generated from Unity.DemoTeam.Hair.HairSim+VolumeCBufferEnvironment
+// PackingRules = Exact
+CBUFFER_START(VolumeCBufferEnvironment)
+    float4 _WorldGravity;
+    uint _LODFrustumCount;
+    uint _BoundaryDelimDiscrete;
+    uint _BoundaryDelimCapsule;
+    uint _BoundaryDelimSphere;
+    uint _BoundaryDelimTorus;
+    uint _BoundaryDelimCube;
+    float _BoundaryWorldEpsilon;
+    float _BoundaryWorldMargin;
+    float _WindEmitterClock;
+    uint _WindEmitterCount;
+    float _ecbpad1;
+    float _ecbpad2;
 CBUFFER_END
 
 // Generated from Unity.DemoTeam.Hair.HairSim+VolumeLODGrid
