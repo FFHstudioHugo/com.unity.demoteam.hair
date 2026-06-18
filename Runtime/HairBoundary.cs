@@ -89,8 +89,17 @@ namespace Unity.DemoTeam.Hair
 		//--------------------
 		// runtime conversion
 
-		public static RuntimeData GetRuntimeCapsule(CapsuleCollider collider) => GetRuntimeCapsule(collider.GetInstanceID(), collider.transform, collider.center, collider.direction, collider.height, collider.radius);
-		public static RuntimeData GetRuntimeCapsule(Transform transform, in SettingsCapsule settings) => GetRuntimeCapsule(transform.GetInstanceID(), transform, Vector3.zero, (int)settings.direction, settings.height, settings.radius);
+		static int GetRuntimeHandle(UnityEngine.Object obj)
+		{
+#if UNITY_6000_5_OR_NEWER
+			return obj != null ? obj.GetEntityId().GetHashCode() : 0;
+#else
+			return obj != null ? obj.GetInstanceID() : 0;
+#endif
+		}
+
+		public static RuntimeData GetRuntimeCapsule(CapsuleCollider collider) => GetRuntimeCapsule(GetRuntimeHandle(collider), collider.transform, collider.center, collider.direction, collider.height, collider.radius);
+		public static RuntimeData GetRuntimeCapsule(Transform transform, in SettingsCapsule settings) => GetRuntimeCapsule(GetRuntimeHandle(transform), transform, Vector3.zero, (int)settings.direction, settings.height, settings.radius);
 		public static RuntimeData GetRuntimeCapsule(int handle, Transform transform, in Vector3 center, int axis, float height, float radius)
 		{
 			var lossyScaleAbs = transform.lossyScale.Abs();
@@ -122,8 +131,8 @@ namespace Unity.DemoTeam.Hair
 			};
 		}
 
-		public static RuntimeData GetRuntimeSphere(SphereCollider collider) => GetRuntimeSphere(collider.GetInstanceID(), collider.transform, collider.center, collider.radius);
-		public static RuntimeData GetRuntimeSphere(Transform transform, in SettingsSphere settings) => GetRuntimeSphere(transform.GetInstanceID(), transform, Vector3.zero, settings.radius);
+		public static RuntimeData GetRuntimeSphere(SphereCollider collider) => GetRuntimeSphere(GetRuntimeHandle(collider), collider.transform, collider.center, collider.radius);
+		public static RuntimeData GetRuntimeSphere(Transform transform, in SettingsSphere settings) => GetRuntimeSphere(GetRuntimeHandle(transform), transform, Vector3.zero, settings.radius);
 		public static RuntimeData GetRuntimeSphere(int handle, Transform transform, in Vector3 center, float radius)
 		{
 			var lossyScaleAbs = transform.lossyScale.Abs();
@@ -152,7 +161,7 @@ namespace Unity.DemoTeam.Hair
 			};
 		}
 
-		public static RuntimeData GetRuntimeTorus(Transform transform, in SettingsTorus settings) => GetRuntimeTorus(transform.GetInstanceID(), transform, Vector3.zero, (int)settings.axis, settings.radiusAxis, settings.radiusRing);
+		public static RuntimeData GetRuntimeTorus(Transform transform, in SettingsTorus settings) => GetRuntimeTorus(GetRuntimeHandle(transform), transform, Vector3.zero, (int)settings.axis, settings.radiusAxis, settings.radiusRing);
 		public static RuntimeData GetRuntimeTorus(int handle, Transform transform, in Vector3 center, int axis, float radiusAxis, float radiusRing)
 		{
 			var lossyScaleAbs = transform.lossyScale.Abs();
@@ -185,8 +194,8 @@ namespace Unity.DemoTeam.Hair
 			};
 		}
 
-		public static RuntimeData GetRuntimeCube(BoxCollider collider) => GetRuntimeCube(collider.GetInstanceID(), collider.transform, collider.center, collider.size);
-		public static RuntimeData GetRuntimeCube(Transform transform, in SettingsCube settings) => GetRuntimeCube(transform.GetInstanceID(), transform, Vector3.zero, settings.size);
+		public static RuntimeData GetRuntimeCube(BoxCollider collider) => GetRuntimeCube(GetRuntimeHandle(collider), collider.transform, collider.center, collider.size);
+		public static RuntimeData GetRuntimeCube(Transform transform, in SettingsCube settings) => GetRuntimeCube(GetRuntimeHandle(transform), transform, Vector3.zero, settings.size);
 		public static RuntimeData GetRuntimeCube(int handle, Transform transform, in Vector3 center, in Vector3 size)
 		{
 			var lossyScaleAbs = transform.lossyScale.Abs();
@@ -222,9 +231,9 @@ namespace Unity.DemoTeam.Hair
 		}
 
 #if HAS_PACKAGE_DEMOTEAM_MESHTOSDF
-		public static RuntimeData GetRuntimeSDF(SDFTexture sdfComponent) => GetRuntimeSDF(sdfComponent.transform.GetInstanceID(), sdfComponent.transform, sdfComponent.sdf, sdfComponent.voxelBounds.size);
+		public static RuntimeData GetRuntimeSDF(SDFTexture sdfComponent) => GetRuntimeSDF(GetRuntimeHandle(sdfComponent.transform), sdfComponent.transform, sdfComponent.sdf, sdfComponent.voxelBounds.size);
 #endif
-		public static RuntimeData GetRuntimeSDF(Transform transform, in SettingsSDF settings) => GetRuntimeSDF(transform.GetInstanceID(), transform, settings.kSDFTexture, settings.kSDFWorldSize);
+		public static RuntimeData GetRuntimeSDF(Transform transform, in SettingsSDF settings) => GetRuntimeSDF(GetRuntimeHandle(transform), transform, settings.kSDFTexture, settings.kSDFWorldSize);
 		public static RuntimeData GetRuntimeSDF(int handle, Transform transform, Texture sdfTexture, in Vector3 sdfWorldSize)
 		{
 			var sdfTextureResolution = Vector3.one;
@@ -273,7 +282,7 @@ namespace Unity.DemoTeam.Hair
 				type = RuntimeData.Type.SDF,
 				xform = new RuntimeTransform
 				{
-					handle = transform.GetInstanceID(),
+					handle = handle,
 					matrix = Matrix4x4.TRS(transform.position, transform.rotation, sdfWorldSize.CMul(sdfWorldScale)) * Matrix4x4.Translate(-0.5f * Vector3.one),
 				},
 				shape = new RuntimeShape
