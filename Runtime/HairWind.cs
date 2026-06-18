@@ -65,6 +65,15 @@ namespace Unity.DemoTeam.Hair
 		//--------------------
 		// runtime conversion
 
+		static int GetRuntimeHandle(UnityEngine.Object obj)
+		{
+#if UNITY_6000_5_OR_NEWER
+			return obj != null ? obj.GetEntityId().GetHashCode() : 0;
+#else
+			return obj != null ? obj.GetInstanceID() : 0;
+#endif
+		}
+
 #if HAS_MODULE_WIND
 		public static SettingsFlow MakeSettingsFlow(WindZone windZone)
 		{
@@ -91,7 +100,7 @@ namespace Unity.DemoTeam.Hair
 				type = RuntimeData.Type.Directional,
 				xform = new RuntimeTransform
 				{
-					handle = transform.GetInstanceID(),
+					handle = GetRuntimeHandle(transform),
 				},
 				emitter = new RuntimeEmitter
 				{
@@ -127,7 +136,7 @@ namespace Unity.DemoTeam.Hair
 				type = RuntimeData.Type.Spherical,
 				xform = new RuntimeTransform
 				{
-					handle = transform.GetInstanceID(),
+					handle = GetRuntimeHandle(transform),
 				},
 				emitter = new RuntimeEmitter
 				{
@@ -185,7 +194,7 @@ namespace Unity.DemoTeam.Hair
 				type = RuntimeData.Type.Turbine,
 				xform = new RuntimeTransform
 				{
-					handle = transform.GetInstanceID(),
+					handle = GetRuntimeHandle(transform),
 				},
 				emitter = new RuntimeEmitter
 				{
@@ -207,6 +216,7 @@ namespace Unity.DemoTeam.Hair
 				gizmo = new RuntimeGizmo
 				{
 					rotation = transform.rotation,
+					turbineBaseWidth = turbine.baseWidth * lossyScaleAbsMax,
 					turbineNozzleWidth = turbine.nozzleWidth * lossyScaleAbsMax,
 					turbineNozzleOffset = turbine.nozzleOffset * lossyScaleAbsMax,
 				},
