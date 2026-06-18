@@ -107,14 +107,24 @@ namespace Unity.DemoTeam.Hair
 
 	public partial class DerivedHash
 	{
+		static Hash128 ComputeObjectHash(UnityEngine.Object key)
+		{
+#if UNITY_6000_5_OR_NEWER
+			int hash = key.GetEntityId().GetHashCode();
+			return new Hash128((uint)hash, 0, 0, 0);
+#else
+			return new Hash128((uint)key.GetInstanceID(), 0, 0, 0);
+#endif
+		}
+
 		public static Hash128 Compute<TObject>(TObject key) where TObject : UnityEngine.Object
 		{
-			return new Hash128((uint)key.GetInstanceID(), 0, 0, 0);
+			return ComputeObjectHash(key);
 		}
 
 		public static Hash128 Compute(Mesh mesh)
 		{
-			return new Hash128((uint)mesh.GetInstanceID(), 0, 0, 0);//TODO content hash?
+			return ComputeObjectHash(mesh);//TODO content hash?
 		}
 
 		public static Hash128 Compute(Texture2D texture)
@@ -122,7 +132,7 @@ namespace Unity.DemoTeam.Hair
 #if UNITY_EDITOR
 			return texture.imageContentsHash;
 #else
-			return new Hash128((uint)texture.GetInstanceID(), 0, 0, 0);
+			return ComputeObjectHash(texture);
 #endif
 		}
 	}
