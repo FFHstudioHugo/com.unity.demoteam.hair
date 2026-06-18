@@ -24,6 +24,21 @@ namespace Unity.DemoTeam.Hair
 	{
 		public static HashSet<HairInstance> s_instances = new HashSet<HairInstance>();
 
+		static int GetRuntimeObjectId(UnityEngine.Object obj)
+		{
+#if UNITY_6000_5_OR_NEWER
+			return obj != null ? obj.GetEntityId().GetHashCode() : 0;
+#else
+			return obj != null ? obj.GetInstanceID() : 0;
+#endif
+		}
+
+		static ulong GetRuntimeObjectSortId(UnityEngine.Object obj)
+		{
+			return unchecked((uint)GetRuntimeObjectId(obj));
+		}
+
+
 		[Serializable]
 		public struct GroupProvider
 		{
@@ -39,14 +54,14 @@ namespace Unity.DemoTeam.Hair
 
 			public ulong GetSortKey()
 			{
-				var a = (ulong)hairAsset.GetInstanceID();
+				var a = GetRuntimeObjectSortId(hairAsset);
 				var b = (ulong)hairAssetGroupIndex;
 				return (a << 32) | b;
 			}
 
 			public ulong GetSortKey48()
 			{
-				var a = (ulong)hairAsset.GetInstanceID();
+				var a = GetRuntimeObjectSortId(hairAsset);
 				var b = (ulong)hairAssetGroupIndex & 0xffffuL;
 				return (a << 16) | b;
 			}
@@ -623,7 +638,7 @@ namespace Unity.DemoTeam.Hair
 							var attachmentTarget = settingsSkinning.rootsAttachTarget;
 							if (attachmentTarget != null && attachmentTarget.isActiveAndEnabled && attachmentTarget.executeOnGPU)
 							{
-								hash.Append(attachmentTarget.GetInstanceID());
+								hash.Append(GetRuntimeObjectId(attachmentTarget));
 							}
 						}
 					}
@@ -1185,7 +1200,9 @@ namespace Unity.DemoTeam.Hair
 						rparams.motionVectorMode = meshRenderer.motionVectorGenerationMode;
 						rparams.shadowCastingMode = meshRenderer.shadowCastingMode;
 						rparams.receiveShadows = true;
-#if UNITY_2023_2_OR_NEWER
+#if UNITY_6000_5_OR_NEWER
+						rparams.entityId = this.GetEntityId();
+#elif UNITY_2023_2_OR_NEWER
 						rparams.instanceID = this.GetInstanceID();
 #endif
 					}
